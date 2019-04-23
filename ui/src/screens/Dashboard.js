@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
 import Drawer from '@material-ui/core/Drawer';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
@@ -13,6 +12,8 @@ import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import { mainListItems } from '../components/SideNav';
+
+import zome from '../services/socialcollaboration.zome';
 
 const drawerWidth = 240;
 
@@ -98,6 +99,10 @@ class Dashboard extends React.Component {
     open: true,
   };
 
+  componentDidMount() {
+    zome.get_threads().then(resp => console.log(resp));
+  }
+
   handleDrawerOpen = () => {
     this.setState({ open: true });
   };
@@ -111,7 +116,6 @@ class Dashboard extends React.Component {
 
     return (
       <div className={classes.root}>
-        <CssBaseline />
         <AppBar
           position="absolute"
           className={classNames(classes.appBar, this.state.open && classes.appBarShift)}

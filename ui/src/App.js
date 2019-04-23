@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import blue from '@material-ui/core/colors/blue';
 import { pink } from '@material-ui/core/colors';
@@ -22,7 +23,10 @@ class App extends Component {
       <MuiThemeProvider theme={theme}>
         {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
         <CssBaseline />
-        <Dashboard />
+        <Router>
+          <Route path="/" exact component={Dashboard} />
+          <Route path="/Dashboard" exact component={Dashboard} />
+        </Router>
       </MuiThemeProvider>
     );
   }
