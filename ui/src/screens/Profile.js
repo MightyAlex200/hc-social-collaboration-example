@@ -11,7 +11,7 @@ const styles = theme => ({
  
 });
 
-class Dashboard extends React.Component {
+class Profile extends React.Component {
   componentDidMount() {
     zome.get_threads().then(resp => console.log(resp));
   }
@@ -20,16 +20,16 @@ class Dashboard extends React.Component {
     const { classes } = this.props;
 
     return (
-      <div className='dashboard'>
+      <div className='profile'>
         <div className={classes.appBarSpacer} />
-        <Typography variant="h4" gutterBottom component="h2">Dashboard</Typography>
+        <Typography variant="h4" gutterBottom component="h2">Profile</Typography>
       </div>
     );
   }
 }
 
-Dashboard.propTypes = {
+Profile.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-export default withStyles(styles)(Dashboard);
+export default withStyles(styles)(Profile);
