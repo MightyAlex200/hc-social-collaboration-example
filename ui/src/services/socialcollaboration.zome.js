@@ -4,7 +4,7 @@ const URL = 'ws://localhost:8888';
 const instanceId = 'test-instance';
 const zome = 'socialcollaboration';
 
-const callZome = (fn, param) => connect(URL).then(({callZome, close}) => callZome(instanceId, zome, fn)(param = {}));
+const callZome = (fn, param) => connect(URL).then(({callZome, close}) => callZome(instanceId, zome, fn)(param));
 
 export default {
   add_skill: (param = {}) => callZome('add_skill', param),

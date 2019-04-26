@@ -20,6 +20,9 @@ import CardContent from '@material-ui/core/CardContent';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
 
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+
 import Paper from '@material-ui/core/Paper';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -35,10 +38,16 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
+import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
+import Grid from '@material-ui/core/Grid';
+
 import zome from '../services/socialcollaboration.zome';
 
 
 const styles = theme => ({
+  root: {
+    flexGrow: 1,
+  },
   paper: {
     ...theme.mixins.gutters(),
     paddingTop: theme.spacing.unit * 2,
@@ -71,34 +80,63 @@ const styles = theme => ({
   progress: {
     margin: theme.spacing.unit * 2,
   },
+  backButton: {
+    marginBottom: theme.spacing.unit * 2,
+  },
+  post: {
+    ...theme.mixins.gutters(),
+    paddingTop: theme.spacing.unit * 2,
+    paddingBottom: theme.spacing.unit * 2,
+  }
 });
 
-class Dashboard extends React.Component {
-  state = {
-    title: '',
-    required_skills: '',
-    threads: [],
-    loading: true,
-    openModal: false
-  };
+class Thread extends React.Component {
+  constructor(props) {
+    const { match } = props;
+    super(props);
 
-  componentDidMount() {
-    this.updateThreads();
+    this.state = {
+      threadId: match.params.id,
+      thread: {},
+      loading: true,
+      openModal: false,
+      post_content: '',
+      threads: [],
+      posts: []
+    };
   }
 
-  updateThreads = () => {
+  componentDidMount() {
+    this.getThread();
+    this.updatePosts();
+    // this.updateThreads();
+  }
+
+  getThread = () => {
+    zome.get_thread({address: this.state.threadId})
+      .then(resp => JSON.parse(resp).Ok)
+      .then(thread => this.setState({thread}));
+  }
+
+  // updateThreads = () => {
+  //   this.setState({loading: true});
+
+  //   zome.get_threads()
+  //     .then(resp => JSON.parse(resp).Ok)
+  //     .then(({addresses}) => {
+  //       this.addresses = addresses;
+  //       return Promise.all(addresses.map(address => zome.get_thread({address})))
+  //     })
+  //     .then(threads => threads.map((thread, index) => ({...JSON.parse(thread).Ok, address: this.addresses[index]})))
+  //     .then(threads => this.setState({threads, loading: false}));
+  // };
+
+  updatePosts = () => {
     this.setState({loading: true});
 
-    zome.get_threads()
+    zome.get_thread_posts({thread: this.state.threadId})
       .then(resp => JSON.parse(resp).Ok)
-      .then(({addresses}) => {
-        this.addresses = addresses;
-        Promise.all(addresses.map(address => zome.get_required_skills({thread: address})))
-          .then(skills => this.skills = skills);
-        return Promise.all(addresses.map(address => zome.get_thread({address})))
-      })
-      .then(threads => threads.map((thread, index) => ({...JSON.parse(thread).Ok, address: this.addresses[index], skills: JSON.parse(this.skills[index]).Ok})))
-      .then(threads => this.setState({threads, loading: false}));
+      .then(posts => this.setState({posts, loading: false}));
   };
 
   handleChange = name => event => {
@@ -108,33 +146,68 @@ class Dashboard extends React.Component {
   handleFormSubmit = e => {
     e.preventDefault();
 
-    if (this.state.title) {
-      zome.create_thread({
-        title: this.state.title,
+    if (this.state.post_content) {
+      zome.create_post({
+        content: this.state.post_content,
         utc_unix_time: Math.floor(+new Date() / 1000),
-        required_skills: [...this.state.required_skills.split(/[\s,]+/)]
+        thread: this.state.threadId
       })
         .then(resp => {
           console.log(resp);
-          setTimeout(() => this.updateThreads(), 250); // Delay refresh to wait for confirmation
+          setTimeout(() => this.updatePosts(), 250); // Delay refresh to wait for confirmation
         });
 
-      this.setState({title: '', required_skills: '', openModal: false});
+      this.setState({post_content: '', openModal: false});
     }
   };
 
   render() {
     const { classes } = this.props;
-    const { threads } = this.state;
+    const { thread, posts, threads } = this.state;
 
-    console.log(threads);
+    console.log('posts', posts);
 
     return (
       <div className={classes.container}>
-        {/* <div className={classes.appBarSpacer} /> */}
-        {/* <Typography variant="h4" gutterBottom component="h2">Dashboard</Typography> */}
-        <Paper className={classes.paper} elevation={1}>
-          <Typography variant="h5" component="h3" gutterBottom>All Threads</Typography>
+        <Button size="small" component={RouterLink} to='/Dashboard' className={classes.backButton}><KeyboardArrowLeft />Back</Button>
+        <Divider />
+        <Toolbar>
+          <Typography variant="h6" color="inherit">{thread.title}</Typography>
+
+        </Toolbar>
+        <Divider />
+        {/* <Paper className={classes.paper} elevation={1}>
+        </Paper> */}
+
+        {posts.length > 0 ?
+          <Grid
+            container
+            direction="row"
+            justify="flex-start"
+            alignItems="stretch"
+            spacing={24}
+            style={{marginTop: 20}}
+          >
+            {posts.map((post, index) => (
+              <Grid key={index} item xs={12} sm={6} md={4}>
+                <Paper className={classes.post} elevation={1}>
+                  <Typography variant="h6" color="inherit" gutterBottom>{new Date(post.timestamp).toLocaleDateString()}</Typography>
+                  <Typography component="p" color="inherit" gutterBottom>{post.content}</Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+          :
+          <Fragment>
+            <div className={classes.appBarSpacer} />
+            <Typography component="h6" align="center">No Posts Found</Typography>
+            <div className={classes.appBarSpacer} />
+          </Fragment>
+        }
+        
+
+        {/* <Paper className={classes.paper} elevation={1}>
+          <Typography variant="h5" component="h3" gutterBottom>Relevant Threads</Typography>
           <Divider />
 
           {(threads.length > 0) ?
@@ -142,7 +215,6 @@ class Dashboard extends React.Component {
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
-                  <TableCell>Required Skills</TableCell>
                   <TableCell>Creator</TableCell>
                   <TableCell>Date</TableCell>
                 </TableRow>
@@ -153,7 +225,6 @@ class Dashboard extends React.Component {
                     <TableCell component="th" scope="row">
                       <Link component={RouterLink} to={`/Thread/${thread.address}`}>{thread.title}</Link>
                     </TableCell>
-                    <TableCell>{thread.skills.join(', ')}</TableCell>
                     <TableCell>{thread.creator}</TableCell>
                     <TableCell>{new Date(thread.timestamp).toLocaleDateString()}</TableCell>
                   </TableRow>
@@ -167,35 +238,28 @@ class Dashboard extends React.Component {
               <div className={classes.appBarSpacer} />
             </Paper>
           }
-        </Paper>
+        </Paper> */}
 
         <Dialog
           open={this.state.openModal}
           onClose={() => this.setState({openModal: false})}
           aria-labelledby="form-dialog-title"
         >
-          <DialogTitle id="form-dialog-title">Create A New Thread</DialogTitle>
+          <DialogTitle id="form-dialog-title">Create A New Post</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              To create a new thread, please enter a title and add some skills (optional). Please separate each skill with a comma. e.g. JavaScript, HTML, CSS
+              To create a post, enter your message below
             </DialogContentText>
             <TextField
               autoFocus
+              multiline
+              rows="5"
               margin="normal"
-              id="title"
-              label="Thread Title"
+              id="post"
+              label="Message"
               type="text"
-              value={this.state.title}
-              onChange={this.handleChange('title')}
-              fullWidth
-            />
-            <TextField
-              margin="normal"
-              id="required_skills"
-              label="Required Skills"
-              type="text"
-              value={this.state.required_skills}
-              onChange={this.handleChange('required_skills')}
+              value={this.state.post_content}
+              onChange={this.handleChange('post_content')}
               fullWidth
             />
           </DialogContent>
@@ -215,8 +279,8 @@ class Dashboard extends React.Component {
   }
 }
 
-Dashboard.propTypes = {
+Thread.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-export default withStyles(styles)(Dashboard);
+export default withStyles(styles)(Thread);

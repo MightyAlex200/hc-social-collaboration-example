@@ -7,7 +7,7 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 
 import './App.scss';
 import Layout from './Layout';
-import { Dashboard, Profile } from './screens';
+import { Dashboard, Thread, Profile } from './screens';
 
 const theme = createMuiTheme({
   palette: {
@@ -30,6 +30,7 @@ class App extends Component {
             <Route path="/" exact component={Dashboard} />
             <Route path="/Dashboard" component={Dashboard} />
             <Route path="/Profile" component={Profile} />
+            <Route path="/Thread/:id" component={Thread} />
           </Layout>
         </Router>
       </MuiThemeProvider>
