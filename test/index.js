@@ -78,7 +78,7 @@ scenario.runTape('test', async (t, { alice }) => {
     const threads = await alice.callSync('socialcollaboration', 'get_threads', {});
     t.deepEquals(
         threads,
-        { Ok: { addresses: [thread_addr.Ok] } },
+        { Ok: { links: [{ address: thread_addr.Ok, headers: [] }] } },
         'threads can be found'
     );
 
