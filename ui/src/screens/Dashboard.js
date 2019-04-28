@@ -36,6 +36,7 @@ import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
 import zome from '../services/socialcollaboration.zome';
+import Loader from '../components/Loader';
 
 
 const styles = theme => ({
@@ -137,7 +138,7 @@ class Dashboard extends React.Component {
           <Typography variant="h5" component="h3" gutterBottom>All Threads</Typography>
           <Divider />
 
-          {(threads.length > 0) ?
+          {this.state.loading ? <Loader /> : (threads.length > 0) ?
             <Table className={classes.table}>
               <TableHead>
                 <TableRow>

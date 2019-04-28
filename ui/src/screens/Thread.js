@@ -42,7 +42,7 @@ import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
 import Grid from '@material-ui/core/Grid';
 
 import zome from '../services/socialcollaboration.zome';
-
+import Loader from '../components/Loader';
 
 const styles = theme => ({
   root: {
@@ -163,7 +163,7 @@ class Thread extends React.Component {
 
   render() {
     const { classes } = this.props;
-    const { thread, posts, threads } = this.state;
+    const { thread, posts } = this.state;
 
     console.log('posts', posts);
 
@@ -179,7 +179,7 @@ class Thread extends React.Component {
         {/* <Paper className={classes.paper} elevation={1}>
         </Paper> */}
 
-        {posts.length > 0 ?
+        {this.state.loading ? Loader : posts.length > 0 ?
           <Grid
             container
             direction="row"
