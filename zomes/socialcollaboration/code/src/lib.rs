@@ -11,13 +11,29 @@ extern crate holochain_core_types_derive;
 use hdk::{
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
     entry_definition::ValidatingEntryType,
-    error::ZomeApiResult,
+    error::{ZomeApiResult, ZomeApiError},
 };
 use hdk::holochain_core_types::{
     cas::content::Address, entry::Entry, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
     validation::{LinkValidationData, EntryValidationData},
     time::Iso8601
 };
+
+/// Username of an agent. Used instead of string to get around issues of
+/// serialization with `ZomeApiResult<String>`
+#[derive(Debug, Clone, PartialEq, DefaultJson, Serialize, Deserialize)]
+struct Username(String);
+
+/// Get the username of an agent
+fn handle_get_username(agent_address: Address) -> ZomeApiResult<Username> {
+    let entry = hdk::get_entry(&agent_address)?;
+    match entry {
+        Some(Entry::AgentId(agent_id)) => Ok(Username(agent_id.nick)),
+        _ => Err(ZomeApiError::Internal(
+            "Address did not lead to agent id.".to_string()
+        )),
+    }
+}
 
 /// Skill that a user claims to have. Will let them see threads that need the
 /// skills they have
@@ -411,6 +427,11 @@ define_zome! {
     genesis: || { Ok(()) }
 
     functions: [
+        get_username: {
+            inputs: |agent_address: Address|,
+            outputs: |result: ZomeApiResult<Username>|,
+            handler: handle_get_username
+        }
         add_skill: {
             inputs: |skill: Skill|,
             outputs: |result: ZomeApiResult<Address>|,
@@ -470,6 +491,7 @@ define_zome! {
 
     traits: {
         hc_public [
+            get_username,
             add_skill,
             remove_skill,
             get_skills,
