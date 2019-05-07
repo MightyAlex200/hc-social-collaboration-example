@@ -12,7 +12,7 @@ const scenario = new Scenario([instanceAlice]);
 scenario.runTape('test', async (t, { alice }) => {
     // Test `add_skill`
     const skill_addr = await alice.callSync('socialcollaboration', 'add_skill', { skill: 'programming' });
-    t.deepEquals(skill_addr, { Ok: 'QmVDar5WaMc4af2sCzrx2i3LxttAddLeTw19qW8oRL2buK' }, 'skills can be added')
+    t.deepEquals(skill_addr, { Ok: 'QmVDar5WaMc4af2sCzrx2i3LxttAddLeTw19qW8oRL2buK' }, 'skills can be added');
 
     // Test `get_my_skills` (also tests `get_skills`)
     const skills = await alice.callSync('socialcollaboration', 'get_my_skills', {});
@@ -46,7 +46,7 @@ scenario.runTape('test', async (t, { alice }) => {
     const required_skills = await alice.callSync('socialcollaboration', 'get_required_skills', {
         thread: thread_addr.Ok,
     });
-    t.deepEquals(required_skills, { Ok: ['programming'] }, 'threads have required skills')
+    t.deepEquals(required_skills, { Ok: ['programming'] }, 'threads have required skills');
 
     // Test `create_post`
     const post_addr = await alice.callSync('socialcollaboration', 'create_post', {
@@ -78,7 +78,7 @@ scenario.runTape('test', async (t, { alice }) => {
     const threads = await alice.callSync('socialcollaboration', 'get_threads', {});
     t.deepEquals(
         threads,
-        { Ok: { addresses: [thread_addr.Ok] } },
+        { Ok: { links: [{ address: thread_addr.Ok, headers: [] }] } },
         'threads can be found'
     );
 
@@ -92,5 +92,16 @@ scenario.runTape('test', async (t, { alice }) => {
 
     // Test `remove_skill`
     const skill_removed = await alice.callSync('socialcollaboration', 'remove_skill', { skill: 'programming' });
-    t.deepEquals(skill_removed, { Ok: null }, 'skills can be removed')
+    t.deepEquals(skill_removed, { Ok: null }, 'skills can be removed');
+
+    // Test `get_username`
+    const username = await alice.callSync(
+        'socialcollaboration',
+        'get_username',
+        {
+            agent_address:
+                'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
+        }
+    );
+    t.deepEquals(username, { Ok: 'alice' }, 'usernames can be retrieved from agent addresses')
 });
