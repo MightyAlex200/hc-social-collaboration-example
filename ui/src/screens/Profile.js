@@ -20,7 +20,7 @@ import CardContent from '@material-ui/core/CardContent';
 import Paper from '@material-ui/core/Paper';
 import Divider from '@material-ui/core/Divider';
 
-import zome from '../services/socialcollaboration.zome';
+import { zomes } from '../services/socialcollaboration.zome';
 
 const styles = theme => ({
   paper: {
@@ -57,37 +57,29 @@ class Profile extends React.Component {
     this.updatetMySkills();
   }
 
-  updatetMySkills = () => {
-    zome.get_my_skills()
-      .then(resp => JSON.parse(resp).Ok)
-      .then(skills => {
-        console.log(skills);
-        this.setState({my_skills: skills})
-      });
+  updatetMySkills = async () => {
+    const my_skills = await zomes.getMySkills();
+    this.setState({ my_skills });
   };
 
-  removeSkill = (skill) => {
-    console.log({skill: skill});
-    zome.remove_skill({skill: skill})
-      .then(resp => {
-        console.log(resp);
-        setTimeout(() => this.updatetMySkills(), 550); // Delay refresh to wait for confirmation
-      });
+  removeSkill = async (skill) => {
+    await zomes.removeSkill(skill);
+    setTimeout(() => this.updatetMySkills(), 550); // Delay refresh to wait for confirmation
   };
 
   handleChange = name => event => {
     this.setState({ [name]: event.target.value });
   };
 
-  handleFormSubmit = e => {
+  handleFormSubmit = async e => {
     e.preventDefault();
+    const { skill } = this.state;
 
-    if (this.state.skill) {
-      zome.add_skill({skill: this.state.skill})
-        .then(resp => {
-          setTimeout(() => this.updatetMySkills(), 250); // Delay refresh to wait for confirmation
-        });
-      this.setState({skill: ''});
+    if (skill) {
+      await zomes.addSkill(skill);
+      this.setState({ skill: '' }, () => {
+        setTimeout(() => this.updatetMySkills(), 250); // Delay refresh to wait for confirmation
+      });
     }
   };
 

@@ -35,7 +35,7 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
-import zome from '../services/socialcollaboration.zome';
+import { zomes } from '../services/socialcollaboration.zome';
 import Loader from '../components/Loader';
 
 
@@ -87,40 +87,55 @@ class Dashboard extends React.Component {
     this.updateThreads();
   }
 
-  updateThreads = () => {
-    this.setState({loading: true});
-
-    zome.get_threads()
-      .then(resp => JSON.parse(resp).Ok)
-      .then(({addresses}) => {
-        this.addresses = addresses;
-        Promise.all(addresses.map(address => zome.get_required_skills({thread: address})))
-          .then(skills => this.skills = skills);
-        return Promise.all(addresses.map(address => zome.get_thread({address})))
-      })
-      .then(threads => threads.map((thread, index) => ({...JSON.parse(thread).Ok, address: this.addresses[index], skills: JSON.parse(this.skills[index]).Ok})))
-      .then(threads => this.setState({threads, loading: false}));
+  /**
+   * Get list of threads and update the view
+   */
+  updateThreads = async () => {
+    zomes.createThread();
+    const threads = await this.getThreads();
+    this.setState({ threads });
   };
 
+  /**
+   * Get a list of all the threads that have been created
+   * And join it with required skills and the usernamed associated
+   * with the initial authoring of that thread
+   */
+  getThreads = async () => {
+    this.setState({ loading: true });
+
+    const { links: threads_addresses } = await zomes.getThreads();
+    return await Promise.all(threads_addresses.map(async ({ address }) => {
+      const thread = await zomes.getThread(address);
+      const skills = await zomes.getThreadSkills(address);
+      const username = await zomes.getUsername(thread.creator);
+      this.setState({ loading: false });
+      return {...thread, skills, username, address};
+    }));
+  };
+
+  /**
+   * Handles Thread Creation Form input changes
+   */
   handleChange = name => event => {
     this.setState({ [name]: event.target.value });
   };
 
-  handleFormSubmit = e => {
+  /**
+   * Handles Thread Creation Form submit
+   * Updates List with Newly created Thread
+   */
+  handleFormSubmit = async e => {
     e.preventDefault();
-
     if (this.state.title) {
-      zome.create_thread({
+      await zomes.createThread({
         title: this.state.title,
         utc_unix_time: Math.floor(+new Date() / 1000),
         required_skills: [...this.state.required_skills.split(/[\s,]+/)]
-      })
-        .then(resp => {
-          console.log(resp);
-          setTimeout(() => this.updateThreads(), 250); // Delay refresh to wait for confirmation
-        });
-
-      this.setState({title: '', required_skills: '', openModal: false});
+      });
+      this.setState({title: '', required_skills: '', openModal: false}, () => {
+        this.updateThreads();
+      });
     }
   };
 
@@ -128,12 +143,8 @@ class Dashboard extends React.Component {
     const { classes } = this.props;
     const { threads } = this.state;
 
-    console.log(threads);
-
     return (
       <div className={classes.container}>
-        {/* <div className={classes.appBarSpacer} /> */}
-        {/* <Typography variant="h4" gutterBottom component="h2">Dashboard</Typography> */}
         <Paper className={classes.paper} elevation={1}>
           <Typography variant="h5" component="h3" gutterBottom>All Threads</Typography>
           <Divider />
@@ -149,13 +160,13 @@ class Dashboard extends React.Component {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {threads.map(thread => (
-                  <TableRow key={thread.address}>
+                {threads.map((thread, index) => (
+                  <TableRow key={index}>
                     <TableCell component="th" scope="row">
                       <Link component={RouterLink} to={`/Thread/${thread.address}`}>{thread.title}</Link>
                     </TableCell>
-                    <TableCell>{thread.skills.join(', ')}</TableCell>
-                    <TableCell>{thread.creator}</TableCell>
+                    <TableCell>{thread.skills && thread.skills.join(', ')}</TableCell>
+                    <TableCell>{thread.username}</TableCell>
                     <TableCell>{new Date(thread.timestamp).toLocaleDateString()}</TableCell>
                   </TableRow>
                 ))}

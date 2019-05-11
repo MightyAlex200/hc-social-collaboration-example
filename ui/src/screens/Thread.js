@@ -41,7 +41,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
 import Grid from '@material-ui/core/Grid';
 
-import zome from '../services/socialcollaboration.zome';
+import { zomes } from '../services/socialcollaboration.zome';
 import Loader from '../components/Loader';
 
 const styles = theme => ({
@@ -97,67 +97,64 @@ class Thread extends React.Component {
 
     this.state = {
       threadId: match.params.id,
-      thread: {},
       loading: true,
       openModal: false,
       post_content: '',
-      threads: [],
       posts: []
     };
   }
 
   componentDidMount() {
-    this.getThread();
+    this.getThreadInfo();
     this.updatePosts();
-    // this.updateThreads();
   }
 
-  getThread = () => {
-    zome.get_thread({address: this.state.threadId})
-      .then(resp => JSON.parse(resp).Ok)
-      .then(thread => this.setState({thread}));
-  }
+  updatePosts = async () => {
+    const { threadId } = this.state;
+    const posts = await this.getPosts(threadId);
+    this.setState({ posts });
+  };
 
-  // updateThreads = () => {
-  //   this.setState({loading: true});
+  getPosts = async (thread_address) => {
+    this.setState({ loading: true });
+    const _posts = await zomes.getPosts(thread_address);
+    const posts = await Promise.all(_posts.map(async post => {
+        const username = await zomes.getUsername(post.creator);
+        return {...post, username};
+      }));
+    this.setState({ loading: false });
+    return posts;
+  };
 
-  //   zome.get_threads()
-  //     .then(resp => JSON.parse(resp).Ok)
-  //     .then(({addresses}) => {
-  //       this.addresses = addresses;
-  //       return Promise.all(addresses.map(address => zome.get_thread({address})))
-  //     })
-  //     .then(threads => threads.map((thread, index) => ({...JSON.parse(thread).Ok, address: this.addresses[index]})))
-  //     .then(threads => this.setState({threads, loading: false}));
-  // };
-
-  updatePosts = () => {
-    this.setState({loading: true});
-
-    zome.get_thread_posts({thread: this.state.threadId})
-      .then(resp => JSON.parse(resp).Ok)
-      .then(posts => this.setState({posts, loading: false}));
+  /**
+   * Gets current Thread's info
+   */
+  getThreadInfo = async () => {
+    const { threadId } = this.state;
+    const thread = await zomes.getThread(threadId);
+    this.setState({ thread });
   };
 
   handleChange = name => event => {
     this.setState({ [name]: event.target.value });
   };
 
-  handleFormSubmit = e => {
+  handleFormSubmit = async e => {
     e.preventDefault();
+    const { threadId, post_content } = this.state;
 
-    if (this.state.post_content) {
-      zome.create_post({
-        content: this.state.post_content,
+    if (post_content) {
+      await zomes.createPost({
+        content: post_content,
         utc_unix_time: Math.floor(+new Date() / 1000),
-        thread: this.state.threadId
-      })
-        .then(resp => {
-          console.log(resp);
-          setTimeout(() => this.updatePosts(), 250); // Delay refresh to wait for confirmation
-        });
+        thread: threadId
+      });
 
-      this.setState({post_content: '', openModal: false});
+      this.setState({ post_content: '', openModal: false }, () => {
+        setTimeout(() => {
+          this.updatePosts();
+        }, 500);
+      });
     }
   };
 
@@ -165,68 +162,29 @@ class Thread extends React.Component {
     const { classes } = this.props;
     const { thread, posts } = this.state;
 
-    console.log('posts', posts);
-
     return (
       <div className={classes.container}>
         <Button size="small" component={RouterLink} to='/Dashboard' className={classes.backButton}><KeyboardArrowLeft />Back</Button>
-        <Divider />
-        <Toolbar>
-          <Typography variant="h6" color="inherit">{thread.title}</Typography>
 
-        </Toolbar>
-        <Divider />
-        {/* <Paper className={classes.paper} elevation={1}>
-        </Paper> */}
-
-        {this.state.loading ? Loader : posts.length > 0 ?
-          <Grid
-            container
-            direction="row"
-            justify="flex-start"
-            alignItems="stretch"
-            spacing={24}
-            style={{marginTop: 20}}
-          >
-            {posts.map((post, index) => (
-              <Grid key={index} item xs={12} sm={6} md={4}>
-                <Paper className={classes.post} elevation={1}>
-                  <Typography variant="h6" color="inherit" gutterBottom>{new Date(post.timestamp).toLocaleDateString()}</Typography>
-                  <Typography component="p" color="inherit" gutterBottom>{post.content}</Typography>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-          :
-          <Fragment>
-            <div className={classes.appBarSpacer} />
-            <Typography component="h6" align="center">No Posts Found</Typography>
-            <div className={classes.appBarSpacer} />
-          </Fragment>
-        }
-        
-
-        {/* <Paper className={classes.paper} elevation={1}>
-          <Typography variant="h5" component="h3" gutterBottom>Relevant Threads</Typography>
+        <Paper className={classes.paper} elevation={1}>
+          <Typography variant="h5" component="h3" gutterBottom>{thread && thread.title} Posts</Typography>
           <Divider />
 
-          {(threads.length > 0) ?
+          {this.state.loading ? <Loader /> : (posts.length > 0) ?
             <Table className={classes.table}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Creator</TableCell>
                   <TableCell>Date</TableCell>
+                  <TableCell>User</TableCell>
+                  <TableCell>Message</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {threads.map(thread => (
-                  <TableRow key={thread.address}>
-                    <TableCell component="th" scope="row">
-                      <Link component={RouterLink} to={`/Thread/${thread.address}`}>{thread.title}</Link>
-                    </TableCell>
-                    <TableCell>{thread.creator}</TableCell>
-                    <TableCell>{new Date(thread.timestamp).toLocaleDateString()}</TableCell>
+                {posts.map((post, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{new Date(post.timestamp).toLocaleDateString()}</TableCell>
+                    <TableCell>{post.username}</TableCell>
+                    <TableCell>{post.content}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -234,11 +192,11 @@ class Thread extends React.Component {
             :
             <Paper className={classes.paper} elevation={0}>
               <div className={classes.appBarSpacer} />
-              <Typography component="p" align="center">No Threads Found</Typography>
+              <Typography component="p" align="center">No Posts Found</Typography>
               <div className={classes.appBarSpacer} />
             </Paper>
           }
-        </Paper> */}
+        </Paper>
 
         <Dialog
           open={this.state.openModal}
