@@ -1,22 +1,11 @@
-import React, { Fragment } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import { Link as RouterLink } from 'react-router-dom'
 import Link from '@material-ui/core/Link';
 import { withStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import DeleteIcon from '@material-ui/icons/Delete';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListSubheader from '@material-ui/core/ListSubheader';
-import Card from '@material-ui/core/Card';
-import CardHeader from '@material-ui/core/CardHeader';
-import CardContent from '@material-ui/core/CardContent';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
 
@@ -27,7 +16,6 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Divider from '@material-ui/core/Divider';
-import CircularProgress from '@material-ui/core/CircularProgress';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -91,7 +79,6 @@ class Dashboard extends React.Component {
    * Get list of threads and update the view
    */
   updateThreads = async () => {
-    zomes.createThread();
     const threads = await this.getThreads();
     this.setState({ threads });
   };
@@ -105,13 +92,14 @@ class Dashboard extends React.Component {
     this.setState({ loading: true });
 
     const { links: threads_addresses } = await zomes.getThreads();
-    return await Promise.all(threads_addresses.map(async ({ address }) => {
+    const threads = await Promise.all(threads_addresses.map(async ({ address }) => {
       const thread = await zomes.getThread(address);
       const skills = await zomes.getThreadSkills(address);
       const username = await zomes.getUsername(thread.creator);
-      this.setState({ loading: false });
       return {...thread, skills, username, address};
     }));
+    this.setState({ loading: false });
+    return threads;
   };
 
   /**
@@ -142,7 +130,7 @@ class Dashboard extends React.Component {
   render() {
     const { classes } = this.props;
     const { threads } = this.state;
-
+console.log(threads, this.state.loading);
     return (
       <div className={classes.container}>
         <Paper className={classes.paper} elevation={1}>
