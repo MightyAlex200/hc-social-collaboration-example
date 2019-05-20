@@ -42,7 +42,21 @@ struct Skill(String);
 
 /// Retrieve the skills a user claims to have
 fn handle_get_skills(address: Address) -> ZomeApiResult<Vec<Skill>> {
-    hdk::utils::get_links_and_load_type(&address, "skill")
+    Ok(hdk::get_links(&address, "skill")?
+        .addresses()
+        .into_iter()
+        .filter_map(|address|
+            hdk::get_entry(&address).ok()
+        )
+        .filter_map(|option| option)
+        .filter_map(|entry|
+            match entry {
+                Entry::App(entry_type, value) =>
+                    serde_json::from_str::<Skill>(&Into::<String>::into(value)).ok(),
+                _ => None,
+            }
+        )
+        .collect())
 }
 
 /// Retrieve the skills the current user claims to have
