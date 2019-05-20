@@ -3,7 +3,7 @@
 const { Config, Scenario } = require('@holochain/holochain-nodejs');
 Scenario.setTape(require('tape'));
 
-const dnaPath = './dist/social-collaboration.dna.json';
+const dnaPath = './dist/hc-social-collaboration-example.dna.json';
 const agentAlice = Config.agent('alice');
 const dna = Config.dna(dnaPath);
 const instanceAlice = Config.instance(agentAlice, dna);
