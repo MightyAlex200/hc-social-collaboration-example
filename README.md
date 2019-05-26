@@ -15,7 +15,7 @@ This project is build on [Holochain](https://holochain.org/), which has a GitHub
 
 #### Downloading Holochain
 
-Once you have these dependencies, you can install Holochain by going to the [releases](https://github.com/holochain/holochain-rust/releases) section of the repository and downloading version **v0.0.12-alpha1**. You are looking for the file that starts with `cli-v0.0.12-alpha1-x86_64` (32-bit computers are not supported) and has your OS listed (`apple-darwin` for macOS, `pc-windows` for Windows, `generic-linux` for GNU/Linux computers). Do **not** download the file that starts with `container`, as that is an application intended for deployment, and not development.
+Once you have these dependencies, you can install Holochain by going to the [releases](https://github.com/holochain/holochain-rust/releases) section of the repository and downloading version **v0.0.16-alpha1**. You are looking for the file that starts with `cli-v0.0.16-alpha1-x86_64` (32-bit computers are not supported) and has your OS listed (`apple-darwin` for macOS, `pc-windows-msvc` for Windows, `generic-linux-gnu` for GNU/Linux computers). Do **not** download the file that starts with `container`, as that is an application intended for deployment, and not development.
 
 After you've downloaded and extracted the files to a folder where they will be moved or deleted, you must add that folder to your path variable. If you are unaware, the path variable is a list of folders where the computer looks to find executable programs that you run from the command line.
 
