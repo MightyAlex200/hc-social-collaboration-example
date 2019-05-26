@@ -70,7 +70,7 @@ fn handle_add_skill(skill: Skill) -> ZomeApiResult<Address> {
 }
 
 /// Remove a skill from the current user
-fn handle_remove_skill(skill: Skill) -> ZomeApiResult<()> {
+fn handle_remove_skill(skill: Skill) -> ZomeApiResult<Address> {
     let skill_address = hdk::entry_address(&Entry::App("skill".into(), skill.into()))?;
     hdk::remove_entry(&skill_address)
 }
@@ -453,7 +453,7 @@ define_zome! {
         }
         remove_skill: {
             inputs: |skill: Skill|,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: handle_remove_skill
         }
         get_skills: {
