@@ -10,7 +10,6 @@ extern crate holochain_core_types_derive;
 
 use hdk::{
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
-    entry_definition::ValidatingEntryType,
     error::{ZomeApiResult, ZomeApiError},
 };
 use hdk::holochain_core_types::{
@@ -42,7 +41,7 @@ struct Skill(String);
 
 /// Retrieve the skills a user claims to have
 fn handle_get_skills(address: Address) -> ZomeApiResult<Vec<Skill>> {
-    Ok(hdk::get_links(&address, "skill")?
+    Ok(hdk::get_links(&address, Some("skill".to_string()), None)?
         .addresses()
         .into_iter()
         .filter_map(|address|
@@ -51,7 +50,7 @@ fn handle_get_skills(address: Address) -> ZomeApiResult<Vec<Skill>> {
         .filter_map(|option| option)
         .filter_map(|entry|
             match entry {
-                Entry::App(entry_type, value) =>
+                Entry::App(_entry_type, value) =>
                     serde_json::from_str::<Skill>(&Into::<String>::into(value)).ok(),
                 _ => None,
             }
@@ -66,13 +65,13 @@ fn handle_get_my_skills() -> ZomeApiResult<Vec<Skill>> {
 
 /// Add a skill to the current user
 fn handle_add_skill(skill: Skill) -> ZomeApiResult<Address> {
-    hdk::utils::commit_and_link(&Entry::App("skill".into(), skill.into()), &hdk::AGENT_ADDRESS, "skill")
+    hdk::utils::commit_and_link(&Entry::App("skill".into(), skill.into()), &hdk::AGENT_ADDRESS, "skill", "")
 }
 
 /// Remove a skill from the current user
-fn handle_remove_skill(skill: Skill) -> ZomeApiResult<Address> {
+fn handle_remove_skill(skill: Skill) -> ZomeApiResult<()> {
     let skill_address = hdk::entry_address(&Entry::App("skill".into(), skill.into()))?;
-    hdk::remove_entry(&skill_address)
+    hdk::remove_link(&hdk::AGENT_ADDRESS, &skill_address, "skill", "")
 }
 
 /// Data structure representing a thread of discussion (like internet forums)
@@ -108,22 +107,22 @@ fn handle_create_thread(title: String, utc_unix_time: u64, required_skills: Vec<
             "skill".into(),
             required_skill.into(),
         ))?;
-        hdk::link_entries(&entry_address, &skill_entry_address, "required")?;
+        hdk::link_entries(&entry_address, &skill_entry_address, "required", "")?;
     }
 
-    hdk::link_entries(&thread_base()?, &entry_address, "thread")?;
+    hdk::link_entries(&thread_base()?, &entry_address, "thread", "")?;
 
     Ok(entry_address)
 }
 
 /// Get a threads posts
 fn handle_get_thread_posts(thread: Address) -> ZomeApiResult<Vec<Post>> {
-    hdk::utils::get_links_and_load_type(&thread, "post")
+    hdk::utils::get_links_and_load_type(&thread, Some("post".to_string()), None)
 }
 
 /// Get all threads' addresses
 fn handle_get_threads() -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&thread_base()?, "thread")
+    hdk::get_links(&thread_base()?, Some("thread".to_string()), None)
 }
 
 /// Get the thread data structure from an address
@@ -133,7 +132,7 @@ fn handle_get_thread(address: Address) -> ZomeApiResult<Thread> {
 
 /// Get the required skills of a thread
 fn handle_get_required_skills(thread: Address) -> ZomeApiResult<Vec<Skill>> {
-    hdk::utils::get_links_and_load_type(&thread, "required")
+    hdk::utils::get_links_and_load_type(&thread, Some("required".to_string()), None)
 }
 
 /// Get the threads with a required skill that you have
@@ -143,7 +142,7 @@ fn handle_get_relevant_threads() -> ZomeApiResult<Vec<Address>> {
     Ok(threads
         .into_iter()
         .filter(|thread_address| {
-            let required_skills: Vec<Skill> = match hdk::utils::get_links_and_load_type(&thread_address, "required") {
+            let required_skills: Vec<Skill> = match hdk::utils::get_links_and_load_type(&thread_address, Some("required".to_string()), None) {
                 Ok(skills) => skills,
                 Err(_) => return false,
             };
@@ -172,7 +171,7 @@ fn handle_create_post(content: String, utc_unix_time: u64, thread: Address) -> Z
     };
 
     let entry = Entry::App("post".into(), post.into());
-    hdk::utils::commit_and_link(&entry, &thread, "post")
+    hdk::utils::commit_and_link(&entry, &thread, "post", "")
 }
 
 define_zome! {
@@ -185,14 +184,17 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: | _validation_data: hdk::EntryValidationData<Skill>| {
-                Ok(())
+            validation: | validation_data: hdk::EntryValidationData<Skill>| {
+                match validation_data {
+                    EntryValidationData::Create { .. } => Ok(()),
+                    _ => Err("Skills are read-only".to_string()),
+                }
             },
 
             links: [
                 from!(
                     "%agent_id",
-                    tag: "skill",
+                    link_type: "skill",
 
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
@@ -295,7 +297,7 @@ define_zome! {
             links: [
                 to!(
                     "skill",
-                    tag: "required",
+                    link_type: "required",
 
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
@@ -332,7 +334,7 @@ define_zome! {
                 ),
                 from!(
                     "thread_base",
-                    tag: "thread",
+                    link_type: "thread",
 
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
@@ -399,7 +401,7 @@ define_zome! {
             links: [
                 from!(
                     "thread",
-                    tag: "post",
+                    link_type: "post",
 
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
@@ -453,7 +455,7 @@ define_zome! {
         }
         remove_skill: {
             inputs: |skill: Skill|,
-            outputs: |result: ZomeApiResult<Address>|,
+            outputs: |result: ZomeApiResult<()>|,
             handler: handle_remove_skill
         }
         get_skills: {

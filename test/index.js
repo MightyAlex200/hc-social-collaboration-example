@@ -78,7 +78,7 @@ scenario.runTape('test', async (t, { alice }) => {
     const threads = await alice.callSync('socialcollaboration', 'get_threads', {});
     t.deepEquals(
         threads,
-        { Ok: { links: [{ address: thread_addr.Ok, headers: [] }] } },
+        { Ok: { links: [{ address: thread_addr.Ok, headers: [], tag: '' }] } },
         'threads can be found'
     );
 
@@ -92,7 +92,7 @@ scenario.runTape('test', async (t, { alice }) => {
 
     // Test `remove_skill`
     const skill_removed = await alice.callSync('socialcollaboration', 'remove_skill', { skill: 'programming' });
-    t.deepEquals(skill_removed, { Ok: 'QmfWKjmrJbUzPau34VweB1UihgocJmcZMBLRLbikAiBZBb' }, 'skills can be removed');
+    t.deepEquals(skill_removed, { Ok: null }, 'skills can be removed');
 
     // Test `get_username`
     const username = await alice.callSync(
